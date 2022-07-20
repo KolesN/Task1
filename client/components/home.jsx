@@ -4,12 +4,13 @@ import Head from './head'
 
 const Home = () => {
   const [counter, setCounterNew] = useState(0)
+  const onClick = () => setCounterNew(counter + 1)
 
   return (
     <div>
       <Head title="Dashboard" />
       <img alt="wave" src="images/wave.jpg" />
-      <button type="button" onClick={() => setCounterNew(counter + 1)}>
+      <button type="button" onClick={onClick}>
         updateCounter
       </button>
       <div> Hello World Dashboard {counter} </div>

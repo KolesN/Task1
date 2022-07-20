@@ -156,5 +156,6 @@
         "ignore": [
             "*.hot-update.json"
         ]
-    }
+    },
+    "repository": "git@github.com:KolesN/Task1.git"
 }
