@@ -44,4 +44,4 @@ const Search = () => {
 
 Search.propTypes = {}
 
-export default React.memo(Search)
+export default Search
