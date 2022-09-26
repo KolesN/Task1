@@ -92,14 +92,11 @@ server.get('/', (req, res) => {
   })
 })
 
-// get /api/v1/users - получает всех юзеров из файла users.json, если его нет - получает данные с сервиса https://jsonplaceholder.typicode.com/users, заполняет файл users.json полученными данными и возвращает эти данные пользователю.
 server.get('/api/v1/users', async (req, res) => {
   const result = await readUsers()
   res.json(result)
 })
 
-// post /api/v1/users - получает тело запроса, добавляет в файл users.json объект нового юзера с id равным id последнего элемента + 1 и содержащий полученное тело запроса.
-// Пользователю должен вернуться объект { status: 'success', id: id }
 server.post('/api/v1/users', async (req, res) => {
   const list = await readUsers()
   const ID = list[list.length - 1].id + 1
@@ -111,10 +108,31 @@ server.post('/api/v1/users', async (req, res) => {
   res.json({ status: 'success', id: ID })
 })
 
-// patch /api/v1/users/:userId - получает тело запроса и добавляет его поля к объекту с id равным userId из файла users.json.
-// Пользователю должен вернуться объект { status: 'success', id: userId }
+server.patch('/api/v1/users/:userId', async (req, res) => {
+  const { userId } = req.params
+  const list = await readUsers()
+  const newList = list.reduce((acc, rec) => {
+    if (rec.id === +userId) {
+      return [...acc, { ...rec, ...req.body }]
+    }
+    return [...acc, rec]
+  }, [])
+  writeUsers('users', JSON.stringify(newList))
+  res.json({ status: 'success', id: userId })
+})
 
-// delete /api/v1/users/:userId - удаляет юзера в users.json, с id равным userId, и возвращает { status: 'success', id: userId }
+server.delete('/api/v1/users/:userId', async (req, res) => {
+  const { userId } = req.params
+  const list = await readUsers()
+  const newList = list.reduce((acc, rec) => {
+    if (rec.id !== +userId) {
+      return [...acc, rec]
+    }
+    return [...acc]
+  }, [])
+  writeUsers('users', JSON.stringify(newList))
+  res.json({ status: 'success', id: userId })
+})
 
 server.delete('/api/v1/users', (req, res) => {
   removeFile('users')
