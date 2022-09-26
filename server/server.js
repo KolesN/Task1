@@ -8,7 +8,8 @@ import React from 'react'
 import cookieParser from 'cookie-parser'
 import config from './config'
 import Html from '../client/html'
-//const { readFile, writeFile, stat, unlink } = require('fs').promises
+
+const { readFile, writeFile, unlink } = require('fs').promises
 
 require('colors')
 
@@ -17,6 +18,7 @@ try {
   // eslint-disable-next-line import/no-unresolved
   Root = require('../dist/assets/js/ssr/root.bundle').default
 } catch {
+  // eslint-disable-next-line no-console
   console.log('SSR not found. Please run "yarn run build:ssr"'.red)
 }
 
@@ -24,6 +26,32 @@ let connections = []
 
 const port = process.env.PORT || 8090
 const server = express()
+
+const usersSource = 'https://jsonplaceholder.typicode.com/users'
+
+const getData = async (url) => {
+  const result = await axios(url).then(({ data }) => data)
+  return result
+}
+
+const removeFile = (name) => {
+  unlink(`${__dirname}/${name}.json`)
+}
+
+const writeUsers = (name, text) => {
+  writeFile(`${__dirname}/${name}.json`, text, { encoding: 'utf8' })
+}
+const readUsers = () => {
+  readFile(`${__dirname}/users.json`, { encoding: 'utf8' })
+    .then((text) => {
+      return JSON.parse(text)
+    })
+    .catch(async () => {
+      const data = getData(usersSource)
+      writeUsers('users', JSON.stringify(data))
+      return data
+    })
+}
 
 const middleware = [
   cors(),
@@ -35,10 +63,16 @@ const middleware = [
 
 middleware.forEach((it) => server.use(it))
 
-server.use('/api/', (req, res) => {
-  res.status(404)
-  res.end()
+server.use((req, res, next) => {
+  res.set('x-skillcrucial-user', 'e7aec42d-a611-47cc-a5c8-93e75ce35f1c')
+  res.set('Access-Control-Expose-Headers', 'X-SKILLCRUCIAL-USER')
+  next()
 })
+
+// server.use('/api/', (req, res) => {
+//   res.status(404)
+//   res.end()
+// })
 
 const [htmlStart, htmlEnd] = Html({
   body: 'separator',
@@ -53,6 +87,25 @@ server.get('/', (req, res) => {
     res.write(htmlEnd)
     res.end()
   })
+})
+
+// get /api/v1/users - получает всех юзеров из файла users.json, если его нет - получает данные с сервиса https://jsonplaceholder.typicode.com/users, заполняет файл users.json полученными данными и возвращает эти данные пользователю.
+server.get('/api/v1/users', (req, res) => {
+  res.json(readUsers())
+})
+
+// post /api/v1/users - получает тело запроса, добавляет в файл users.json объект нового юзера с id равным id последнего элемента + 1 и содержащий полученное тело запроса.
+// Пользователю должен вернуться объект { status: 'success', id: id }
+
+// patch /api/v1/users/:userId - получает тело запроса и добавляет его поля к объекту с id равным userId из файла users.json.
+// Пользователю должен вернуться объект { status: 'success', id: userId }
+
+// delete /api/v1/users/:userId - удаляет юзера в users.json, с id равным userId, и возвращает { status: 'success', id: userId }
+
+// delete /api/v1/users - удаляет файл users.json
+server.delete('/api/v1/users', (req, res) => {
+  removeFile('users')
+  res.json({ status: 'ok' })
 })
 
 server.get('/*', (req, res) => {
@@ -79,4 +132,21 @@ if (config.isSocketsEnabled) {
   })
   echo.installHandlers(app, { prefix: '/ws' })
 }
+// eslint-disable-next-line no-console
 console.log(`Serving at http://localhost:${port}`)
+
+// readFile(`${__dirname}/test.json`, { encoding: 'utf8' })
+//   .then((text) => {
+//     /* вернется текст из файла, а не объект джаваскрипта */
+//   })
+//   .catch((err) => {
+//     /* случается когда нет файла */
+//   })
+
+//  writeFile(`${__dirname}/test.json`, text, { encoding: "utf8" });
+
+//  stat(`${__dirname}/test.json`)
+//   .then(data => /* случается когда есть файл test.json */)
+//    .catch(err => /* случается когда нет файла test.json */)
+
+// unlink(`${__dirname}/test.json`)
