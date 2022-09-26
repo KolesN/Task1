@@ -18,6 +18,7 @@ const Input = (props) => {
 const Button = (props) => {
   const onClick = (e) => {
     history.push(`https://api.github.com/users/${e.target.value}/repos`)
+    
   }
   return (
     <div>
