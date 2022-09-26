@@ -100,13 +100,22 @@ server.get('/api/v1/users', async (req, res) => {
 
 // post /api/v1/users - получает тело запроса, добавляет в файл users.json объект нового юзера с id равным id последнего элемента + 1 и содержащий полученное тело запроса.
 // Пользователю должен вернуться объект { status: 'success', id: id }
+server.post('/api/v1/users', async (req, res) => {
+  const list = await readUsers()
+  const ID = list[list.length - 1].id + 1
+  const newUser = { ...req.body, id: ID }
+  const newList = [...list, newUser]
+
+  writeUsers('users', JSON.stringify(newList))
+
+  res.json({ status: 'success', id: ID })
+})
 
 // patch /api/v1/users/:userId - получает тело запроса и добавляет его поля к объекту с id равным userId из файла users.json.
 // Пользователю должен вернуться объект { status: 'success', id: userId }
 
 // delete /api/v1/users/:userId - удаляет юзера в users.json, с id равным userId, и возвращает { status: 'success', id: userId }
 
-// delete /api/v1/users - удаляет файл users.json
 server.delete('/api/v1/users', (req, res) => {
   removeFile('users')
   res.json({ status: 'ok' })
@@ -138,19 +147,3 @@ if (config.isSocketsEnabled) {
 }
 // eslint-disable-next-line no-console
 console.log(`Serving at http://localhost:${port}`)
-
-// readFile(`${__dirname}/test.json`, { encoding: 'utf8' })
-//   .then((text) => {
-//     /* вернется текст из файла, а не объект джаваскрипта */
-//   })
-//   .catch((err) => {
-//     /* случается когда нет файла */
-//   })
-
-//  writeFile(`${__dirname}/test.json`, text, { encoding: "utf8" });
-
-//  stat(`${__dirname}/test.json`)
-//   .then(data => /* случается когда есть файл test.json */)
-//    .catch(err => /* случается когда нет файла test.json */)
-
-// unlink(`${__dirname}/test.json`)
