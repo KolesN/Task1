@@ -4,6 +4,7 @@ import cors from 'cors'
 import sockjs from 'sockjs'
 import { renderToStaticNodeStream } from 'react-dom/server'
 import React from 'react'
+import axios from 'axios'
 
 import cookieParser from 'cookie-parser'
 import config from './config'
@@ -27,7 +28,7 @@ let connections = []
 const port = process.env.PORT || 8090
 const server = express()
 
-const usersSource = 'https://jsonplaceholder.typicode.com/users'
+const USERS_SOURCE = 'https://jsonplaceholder.typicode.com/users'
 
 const getData = async (url) => {
   const result = await axios(url).then(({ data }) => data)
@@ -41,16 +42,18 @@ const removeFile = (name) => {
 const writeUsers = (name, text) => {
   writeFile(`${__dirname}/${name}.json`, text, { encoding: 'utf8' })
 }
-const readUsers = () => {
-  readFile(`${__dirname}/users.json`, { encoding: 'utf8' })
+
+const readUsers = async () => {
+  const result = await readFile(`${__dirname}/users.json`, { encoding: 'utf8' })
     .then((text) => {
       return JSON.parse(text)
     })
     .catch(async () => {
-      const data = getData(usersSource)
+      const data = await getData(USERS_SOURCE)
       writeUsers('users', JSON.stringify(data))
       return data
     })
+  return result
 }
 
 const middleware = [
@@ -90,8 +93,9 @@ server.get('/', (req, res) => {
 })
 
 // get /api/v1/users - получает всех юзеров из файла users.json, если его нет - получает данные с сервиса https://jsonplaceholder.typicode.com/users, заполняет файл users.json полученными данными и возвращает эти данные пользователю.
-server.get('/api/v1/users', (req, res) => {
-  res.json(readUsers())
+server.get('/api/v1/users', async (req, res) => {
+  const result = await readUsers()
+  res.json(result)
 })
 
 // post /api/v1/users - получает тело запроса, добавляет в файл users.json объект нового юзера с id равным id последнего элемента + 1 и содержащий полученное тело запроса.
